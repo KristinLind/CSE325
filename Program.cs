@@ -14,6 +14,9 @@ var salesTotal = CalculateSalesTotal(salesFiles);
 
 File.AppendAllText(Path.Combine(salesTotalDir, "totals.txt"), $"{salesTotal}{Environment.NewLine}");
 
+var salesSummary = GenerateSalesSummary(salesFiles);
+File.WriteAllText(Path.Combine(salesTotalDir, "sales-summary.txt"), salesSummary);
+
 IEnumerable<string> FindFiles(string folderName)
 {
     List<string> salesFiles = new List<string>();
@@ -54,6 +57,35 @@ double CalculateSalesTotal(IEnumerable<string> salesFiles)
     }
 
     return salesTotal;
+}
+
+string GenerateSalesSummary(IEnumerable<string> salesFiles)
+{
+    double totalSales = 0;
+    var details = new List<string>();
+
+    foreach (var file in salesFiles)
+    {
+        string salesJson = File.ReadAllText(file);
+        SalesData? data = JsonConvert.DeserializeObject<SalesData?>(salesJson);
+        if (Path.GetFileName(file) != "sales.json")
+        {
+            continue;
+        }
+        double fileTotal = data?.Total ?? 0;
+        totalSales += fileTotal;
+
+        string fileName = Path.GetFileName(file);
+        details.Add($"  {fileName}: {fileTotal:C2}");
+    }
+
+    string summary = "Sales Summary" + Environment.NewLine;
+    summary += "----------------------------" + Environment.NewLine;
+    summary += $"Total Sales: {totalSales:C2}" + Environment.NewLine;
+    summary += Environment.NewLine + "Details:" + Environment.NewLine;
+    summary += string.Join(Environment.NewLine, details);
+
+    return summary;
 }
 
 record SalesData(double Total);
